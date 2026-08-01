@@ -3,7 +3,7 @@ import sqlite3
 import json
 from datetime import date
 
-DB_NAME = "baza.db"
+DB_NAME = "znr_baza"
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -25,7 +25,7 @@ def init_db():
         )
     ''')
     
-    # Tabela lokacija i opreme (spremljeno kao JSON tekst za fleksibilnost)
+    # Tabela lokacija i opreme
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS lokacije (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -219,7 +219,7 @@ def snimi_podatke_firme(username, formData):
         formData.get('kontakt', ''), 
         username
     ))
-                   
+                    
     cursor.execute("UPDATE lokacije SET lokacije_json = ? WHERE username = ?",
                    (json.dumps(formData['lokacije']), username))
                    
@@ -246,7 +246,7 @@ def registruj_novu_firmu(username, password, naziv, djelatnost, radnika, lokacij
     conn.close()
     return uspjeh
 
-# --- FUNKCIJE ZA REGISTAR MAŠINA I OPREME ---
+# --- OSTALE FUNKCIJE ZA MAŠINE, OBUKE, LJEKARSKE, RIZIKE, MATERIJE I LZO ---
 
 def ucitaj_masine(username):
     conn = sqlite3.connect(DB_NAME)
@@ -273,8 +273,6 @@ def obrisi_masinu(masina_id):
     conn.commit()
     conn.close()
 
-# --- FUNKCIJE ZA OBUKE RADNIKA ---
-
 def ucitaj_obuke(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -299,8 +297,6 @@ def obrisi_obuku(obuka_id):
     cursor.execute("DELETE FROM obuke_radnici WHERE id = ?", (obuka_id,))
     conn.commit()
     conn.close()
-
-# --- FUNKCIJE ZA LJEKARSKE PREGLEDE RADNIKA ---
 
 def ucitaj_ljekarske(username):
     conn = sqlite3.connect(DB_NAME)
@@ -327,12 +323,10 @@ def obrisi_ljekarski(ljekarski_id):
     conn.commit()
     conn.close()
 
-# --- FUNKCIJE ZA RADNA MJESTA SA POVEĆANIM RIZIKOM ---
-
 def ucitaj_rizicna_mjesta(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, naziv_radnog_mjesta, opis_opasnosti, ime_radnika FROM radna_mjesta_rizik WHERE username = ?", (username,))
+    cursor.execute("SELECT id, naziv_radnog_mjesta, opis_opasnosti, ime_radnika WHERE username = ?", (username,))
     res = cursor.fetchall()
     conn.close()
     return res
@@ -353,8 +347,6 @@ def obrisi_rizicno_mjesto(id_zapis):
     cursor.execute("DELETE FROM radna_mjesta_rizik WHERE id = ?", (id_zapis,))
     conn.commit()
     conn.close()
-
-# --- FUNKCIJE ZA OPASNE MATERIJE I HEMIKALIJE ---
 
 def ucitaj_opasne_materije(username):
     conn = sqlite3.connect(DB_NAME)
@@ -380,8 +372,6 @@ def obrisi_opasnu_materiju(id_zapis):
     cursor.execute("DELETE FROM opasne_materije WHERE id = ?", (id_zapis,))
     conn.commit()
     conn.close()
-
-# --- FUNKCIJE ZA EVIDENCIJU LZO ---
 
 def ucitaj_lzo(username):
     conn = sqlite3.connect(DB_NAME)
