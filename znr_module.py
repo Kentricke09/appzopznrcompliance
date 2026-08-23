@@ -3,8 +3,10 @@ import database
 import config
 from datetime import date, timedelta
 import io
+import subprocess
+import sys
 
-# Pokušaj uvoza reportlab-a i fontova za PDF generisanje
+# Automatska provjera i instalacija reportlab-a ukoliko nedostaje na serveru
 try:
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -12,14 +14,26 @@ try:
     from reportlab.lib import colors
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
-    
-    # Registracija Windows Arial fonta da podržava naše kvačiće (č, ć, š, ž, đ)
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "reportlab"])
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        REPORTLAB_AVAILABLE = True
+    except Exception:
+        REPORTLAB_AVAILABLE = False
+
+# Pokušaj registracije Windows Arial fonta (ako je lokalno na Windows-u), uz fallback na standardne ako font nije pronađen
+try:
     pdfmetrics.registerFont(TTFont('Arial', 'C:/Windows/Fonts/arial.ttf'))
     pdfmetrics.registerFont(TTFont('Arial-Bold', 'C:/Windows/Fonts/arialbd.ttf'))
-    
-    REPORTLAB_AVAILABLE = True
 except Exception:
-    REPORTLAB_AVAILABLE = False
+    pass
 
 
 # --- 1. MODULI ZA KADROVE ---
@@ -94,7 +108,7 @@ def prikazi_radna_mjesta_sa_povećanim_rizikom_tab(username):
         data_rm = [["Radno mjesto", "Opis opasnosti", "Radnik"]] + [[r[1], r[2], r[3]] for r in rm_rows]
         st.table(data_rm)
     else:
-        st.info("Nema unesenih rizičnih mjesta.")
+        st.info("Nema radnih mjesta sa povećanim rizikom.")
 
 def prikazi_lzo_tab(username):
     st.markdown("### 🪖 LZO Zaduženja (Lična zaštitna oprema)")
@@ -267,7 +281,7 @@ def prikazi_opasne_materije_tab(username):
         data_mat = [["Materija", "Količina", "Namjena", "SDS"]] + [[m[1], m[2], m[3], m[4]] for m in mat_rows]
         st.table(data_mat)
     else:
-        st.info("Nema unesenih opasnih materija.")
+        st.info("Nema opasnih materija.")
 
 def prikazi_povrede_tab(username):
     st.markdown("### 🚑 Evidencija o povredama na radu (Član 61. tačka f)")
@@ -290,7 +304,7 @@ def prikazi_povrede_tab(username):
         data_pov = [["Radnik", "Radno mjesto", "Datum", "Vrsta", "Prijava"]] + [[p[1], p[2], p[3], p[4], p[6]] for p in pov_rows]
         st.table(data_pov)
     else:
-        st.info("Nema evidentiranih povreda na radu.")
+        st.info("Nema povreda na radu, profesionalnih oboljenja niti smrtnih slučajeva.")
 
 def prikazi_zop_tab(username):
     st.markdown("### 🧯 Zaštita od požara (ZOP)")
@@ -392,8 +406,8 @@ def generisi_generalni_pdf(formData, current_user):
     elements = []
     styles = getSampleStyleSheet()
     
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Arial-Bold', fontSize=16, textColor=colors.HexColor("#1e3a8a"), spaceAfter=12)
-    normal_style = ParagraphStyle('NormalStyle', parent=styles['Normal'], fontName='Arial', fontSize=10)
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=16, textColor=colors.HexColor("#1e3a8a"), spaceAfter=12)
+    normal_style = ParagraphStyle('NormalStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=10)
     
     elements.append(Paragraph(f"<b>GENERALNI IZVJEŠTAJ USKLAĐENOSTI (ZNR & ZOP)</b>", title_style))
     elements.append(Paragraph(f"<b>Kompanija:</b> {formData.get('naziv', current_user)}", normal_style))
@@ -439,8 +453,8 @@ def generisi_generalni_pdf(formData, current_user):
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#e2e8f0")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.HexColor("#0f172a")),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-        ('FONTNAME', (0,0), (-1,-1), 'Arial'),
-        ('FONTNAME', (0,0), (-1,0), 'Arial-Bold'),
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('BOTTOMPADDING', (0,0), (-1,0), 6),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
         ('FONTSIZE', (0,0), (-1,-1), 9),
@@ -458,9 +472,9 @@ def generisi_clan61_pdf(username, formData):
     elements = []
     styles = getSampleStyleSheet()
     
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Arial-Bold', fontSize=15, textColor=colors.HexColor("#b91c1c"), spaceAfter=10)
-    h2_style = ParagraphStyle('H2Style', parent=styles['Heading2'], fontName='Arial-Bold', fontSize=11, textColor=colors.HexColor("#1e293b"), spaceBefore=8, spaceAfter=4)
-    normal_style = ParagraphStyle('NormalStyle', parent=styles['Normal'], fontName='Arial', fontSize=9)
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=15, textColor=colors.HexColor("#b91c1c"), spaceAfter=10)
+    h2_style = ParagraphStyle('H2Style', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor("#1e293b"), spaceBefore=8, spaceAfter=4)
+    normal_style = ParagraphStyle('NormalStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=9)
     
     elements.append(Paragraph(f"<b>IZVJEŠTAJ PO ČLANU 61. ZAKONA O ZAŠTITI NA RADU FBiH</b>", title_style))
     elements.append(Paragraph(f"<b>Poslodavac:</b> {formData.get('naziv', username)} | <b>Datum generisanja:</b> {date.today()}", normal_style))
@@ -472,7 +486,7 @@ def generisi_clan61_pdf(username, formData):
     if rm_rows:
         data_rm = [["Radno mjesto", "Opis opasnosti", "Raspoređeni radnik"]] + [[r[1], r[2], r[3]] for r in rm_rows]
         t_rm = Table(data_rm, colWidths=[140, 220, 140])
-        t_rm.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Arial'), ('FONTSIZE', (0,0), (-1,-1), 8)]))
+        t_rm.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,0), (-1,-1), 8)]))
         elements.append(t_rm)
     else:
         elements.append(Paragraph("Nema radnih mjesta sa povećanim rizikom.", normal_style))
@@ -484,7 +498,7 @@ def generisi_clan61_pdf(username, formData):
     if mat_rows:
         data_mat = [["Naziv materije", "Količina / Skladište", "Namjena", "SDS"]] + [[m[1], m[2], m[3], m[4]] for m in mat_rows]
         t_mat = Table(data_mat, colWidths=[130, 130, 140, 100])
-        t_mat.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Arial'), ('FONTSIZE', (0,0), (-1,-1), 8)]))
+        t_mat.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,0), (-1,-1), 8)]))
         elements.append(t_mat)
     else:
         elements.append(Paragraph("Nema opasnih materija.", normal_style))
@@ -496,7 +510,7 @@ def generisi_clan61_pdf(username, formData):
     if ob_rows:
         data_ob = [["Radnik", "Radno mjesto", "Vrsta obuke", "Datum obuke", "Napomena"]] + [[o[1], o[2], o[3], o[4], o[6]] for o in ob_rows]
         t_ob = Table(data_ob, colWidths=[110, 80, 110, 80, 120])
-        t_ob.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Arial'), ('FONTSIZE', (0,0), (-1,-1), 8)]))
+        t_ob.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,0), (-1,-1), 8)]))
         elements.append(t_ob)
     else:
         elements.append(Paragraph("Nema obuka radnika.", normal_style))
@@ -508,7 +522,7 @@ def generisi_clan61_pdf(username, formData):
     if mas_rows:
         data_mas = [["Naziv / Oprema", "Kategorija / Tip", "Broj zapisnika", "Pregled", "Istek", "Kuća"]] + [[m[1], m[2], m[4], m[6], m[7], m[5]] for m in mas_rows]
         t_mas = Table(data_mas, colWidths=[120, 120, 75, 65, 65, 55])
-        t_mas.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Arial'), ('FONTSIZE', (0,0), (-1,-1), 7)]))
+        t_mas.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,0), (-1,-1), 7)]))
         elements.append(t_mas)
     else:
         elements.append(Paragraph("Nema pregleda i ispitivanja mašina i radne sredine.", normal_style))
@@ -520,7 +534,7 @@ def generisi_clan61_pdf(username, formData):
     if pov_rows:
         data_pov = [["Ime i prezime", "Radno mjesto", "Datum povrede", "Vrsta / Težina", "Uzrok", "Prijava inspekciji"]] + [[p[1], p[2], p[3], p[4], p[5], p[6]] for p in pov_rows]
         t_pov = Table(data_pov, colWidths=[100, 80, 70, 90, 100, 60])
-        t_pov.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Arial'), ('FONTSIZE', (0,0), (-1,-1), 7)]))
+        t_pov.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,0), (-1,-1), 7)]))
         elements.append(t_pov)
     else:
         elements.append(Paragraph("Nema povreda na radu, profesionalnih oboljenja niti smrtnih slučajeva.", normal_style))
@@ -532,7 +546,7 @@ def generisi_clan61_pdf(username, formData):
     if lj_rows:
         data_lj = [["Ime i prezime", "Radno mjesto", "Tip pregleda", "Datum pregleda", "Istek", "Ustanova"]] + [[l[1], l[2], l[3], l[4], l[5], l[6]] for l in lj_rows]
         t_lj = Table(data_lj, colWidths=[110, 90, 90, 75, 75, 60])
-        t_lj.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Arial'), ('FONTSIZE', (0,0), (-1,-1), 7)]))
+        t_lj.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,0), (-1,-1), 7)]))
         elements.append(t_lj)
     else:
         elements.append(Paragraph("Nema ljekarskih pregleda radnika.", normal_style))
@@ -578,10 +592,10 @@ def prikazi_znr_formu(formData, current_user):
                 mime="application/pdf"
             )
     else:
-        st.warning("⚠️ Biblioteka `reportlab` nije instalirana. Pokrenite `pip install reportlab` u terminalu da biste omogućili generisanje PDF-a.")
+        st.warning("⚠️ Biblioteka `reportlab` se trenutno učitava na serveru. Molimo osvježite stranicu za par sekundi.")
 
     st.markdown("---")
-    st.markdown("#### 🚦 Pregled statusa zakonskih obaveza:")
+    st.markdown("#### 📋 Pregled zakonskih obaveza:")
     
     lokacije_dict = formData.get("lokacije", {})
     aktivne_obaveze = lokacije_dict.get("Sve lokacije (Sumarni pregled)", [])
