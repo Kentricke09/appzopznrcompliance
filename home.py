@@ -30,8 +30,8 @@ def main():
         with col_centar2:
             st.markdown("""
             <div style="text-align: center; margin-bottom: 20px;">
-                <h1>🛡️ Compliance Command Center</h1>
-                <p style="color: #64748b;">Digitalni sistem za upravljanje zakonskom usklađenošću poslovanja</p>
+                <h1>🛡️ Sistem upravljanja ZNR</h1>
+                <p style="color: #64748b;">sistem za upravljanje usklađenošću sa ZNR</p>
             </div>
             """, unsafe_allow_html=True)
 
