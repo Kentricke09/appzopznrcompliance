@@ -1,67 +1,48 @@
 # database.py
 import sqlite3
 import json
-from datetime import date
+import os
 
-DB_NAME = "znr_baza"
+# Definišemo apsolutnu putanju da baza uvijek bude u istom folderu uz skript
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.path.join(BASE_DIR, "znr_baza.db")
 
-def init_db():
+def inicijalizuj_bazu():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # Tabela kompanija / korisnika sa proširenim poljima
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS kompanije (
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS korisnici (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            naziv TEXT NOT NULL,
-            djelatnost TEXT,
-            radnika INTEGER,
-            sjediste TEXT,
-            jib TEXT,
-            direktor TEXT,
-            kontakt TEXT
+            podaci_firme TEXT
         )
-    ''')
+    """)
     
-    # Tabela lokacija i opreme
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS lokacije (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            lokacije_json TEXT NOT NULL,
-            FOREIGN KEY (username) REFERENCES kompanije (username)
-        )
-    ''')
-    
-    # Tabela datuma pregleda opreme
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS datumi (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            datumi_json TEXT NOT NULL,
-            FOREIGN KEY (username) REFERENCES kompanije (username)
-        )
-    ''')
-    
-    # Tabela za registar mašina, opreme i upotrebnih dozvola (Član 61)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS masine_oprema (
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS masine (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
-            naziv_masine TEXT,
+            naziv TEXT,
             kategorija TEXT,
             serijski_broj TEXT,
             broj_dozvole TEXT,
+            ovlastena_kuca TEXT,
             datum_pregleda TEXT,
-            datum_isteka TEXT
+            datum_isteka TEXT,
+            pdf_putanja TEXT
         )
-    ''')
+    """)
 
-    # Tabela za evidenciju obuka (ZNR i ZOP) po radnicima
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS obuke_radnici (
+    try:
+        cursor.execute("ALTER TABLE masine ADD COLUMN ovlastena_kuca TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS obuke (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
             ime_prezime TEXT,
@@ -69,13 +50,13 @@ def init_db():
             vrsta_obuke TEXT,
             datum_obuke TEXT,
             datum_isteka TEXT,
-            napomena TEXT
+            napomena TEXT,
+            pdf_putanja TEXT
         )
-    ''')
+    """)
 
-    # Tabela za evidenciju ljekarskih pregleda po radnicima
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS ljekarski_pregledi (
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ljekarski (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
             ime_prezime TEXT,
@@ -83,23 +64,22 @@ def init_db():
             tip_pregleda TEXT,
             datum_pregleda TEXT,
             datum_isteka TEXT,
-            zdravstvena_ustanova TEXT
+            ustanova TEXT,
+            pdf_putanja TEXT
         )
-    ''')
+    """)
 
-    # Tabela za radna mjesta sa povećanim rizikom i radnike na njima
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS radna_mjesta_rizik (
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS rizicna_mjesta (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
-            naziv_radnog_mjesta TEXT,
+            naziv_rm TEXT,
             opis_opasnosti TEXT,
             ime_radnika TEXT
         )
-    ''')
+    """)
 
-    # Tabela za opasne materije i hemikalije
-    cursor.execute('''
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS opasne_materije (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
@@ -108,243 +88,206 @@ def init_db():
             namjena TEXT,
             posjeduje_sds TEXT
         )
-    ''')
+    """)
 
-    # Tabela za evidenciju zadužene opreme za ličnu zaštitu (LZO)
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS lzo_zaduzenja (
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS lzo (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
-            ime_radnika TEXT,
+            ime_prezime TEXT,
             radno_mjesto TEXT,
             naziv_lzo TEXT,
             datum_zaduzenja TEXT,
             napomena TEXT
         )
-    ''')
-    
+    """)
+
+    # --- NOVE TABELE ZA ČLAN 61 ---
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS posude_pod_pritiskom (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            naziv_opreme TEXT,
+            inventarni_broj TEXT,
+            radni_pritisak TEXT,
+            datum_pregleda TEXT,
+            datum_isteka TEXT,
+            ovlastena_kuca TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS povrede_na_radu (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            ime_prezime TEXT,
+            radno_mjesto TEXT,
+            datum_povrede TEXT,
+            vrsta_tezina_povrede TEXT,
+            uzrok_povrede TEXT,
+            prijava_inspekciji TEXT
+        )
+    """)
+
     conn.commit()
     conn.close()
+
+def init_db():
+    inicijalizuj_bazu()
 
 def ubaci_inicijalne_firme():
-    init_db()
+    pass
+
+def provjeri_korisnika(username, password):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    
-    firme = [
-        ("primotronic", "primo2026", "Primotronic d.o.o.", "Elektroenergetika i automatizacija", 35,
-         {"Sve lokacije (Sumarni pregled)": ["Periodični ljekarski pregledi", "Vatrogasni aparati (PP aparati)", "Električne i gromobranske instalacije"], "Sarajevo - Uprava": ["Periodični ljekarski pregledi", "Vatrogasni aparati (PP aparati)"], "Tuzla - Pogon": ["Električne i gromobranske instalacije"]},
-         {"Periodični ljekarski pregledi": "2025-05-10", "Vatrogasni aparati (PP aparati)": "2026-06-01", "Električne i gromobranske instalacije": "2024-03-15"}
-        ),
-        ("livi", "livi2026", "Livi d.o.o.", "Tekstilna industrija i konfekcija", 120,
-         {"Sve lokacije (Sumarni pregled)": ["Periodični ljekarski pregledi", "Vatrogasni aparati (PP aparati)", "Panik rasvjeta i evakuacioni putevi"], "Zenica - Fabrika": ["Periodični ljekarski pregledi", "Vatrogasni aparati (PP aparati)", "Panik rasvjeta i evakuacioni putevi"]},
-         {"Periodični ljekarski pregledi": "2026-02-10", "Vatrogasni aparati (PP aparati)": "2025-11-20", "Panik rasvjeta i evakuacioni putevi": "2024-08-01"}
-        ),
-        ("granulo", "granulo2026", "Granulo d.o.o.", "Građevinski materijali i separacija", 45,
-         {"Sve lokacije (Sumarni pregled)": ["Posude pod pritiskom i kompresori", "Unutrašnji transport (viljuškari, kranovi, paletari)", "Radna mjesta sa povećanim rizikom"], "Kakanj - Separacija": ["Posude pod pritiskom i kompresori", "Unutrašnji transport (viljuškari, kranovi, paletari)"]},
-         {"Posude pod pritiskom i kompresori": "2025-04-12", "Unutrašnji transport (viljuškari, kranovi, paletari)": "2025-09-30", "Radna mjesta sa povećanim rizikom": "2025-01-15"}
-        )
-    ]
-    
-    for username, pwd, naziv, djelatnost, radnika, lokacije, datumi in firme:
-        cursor.execute("SELECT id FROM kompanije WHERE username = ?", (username,))
-        if not cursor.fetchone():
-            cursor.execute("INSERT INTO kompanije (username, password, naziv, djelatnost, radnika) VALUES (?, ?, ?, ?, ?)",
-                           (username, pwd, naziv, djelatnost, radnika))
-            cursor.execute("INSERT INTO lokacije (username, lokacije_json) VALUES (?, ?)",
-                           (username, json.dumps(lokacije)))
-            cursor.execute("INSERT INTO datumi (username, datumi_json) VALUES (?, ?)",
-                           (username, json.dumps(datumi)))
-    
-    conn.commit()
+    cursor.execute("SELECT * FROM korisnici WHERE username = ? AND password = ?", (username, password))
+    user = cursor.fetchone()
     conn.close()
+    return user is not None
 
 def provjeri_login(username, password):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("SELECT naziv, djelatnost, radnika FROM kompanije WHERE username = ? AND password = ?", (username, password))
-    res = cursor.fetchone()
-    conn.close()
-    return res
+    return provjeri_korisnika(username, password)
+
+def dodaj_korisnika(username, password):
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        pocetni_podaci = json.dumps({
+            "naziv": "",
+            "djelatnost": "",
+            "radnika": 20,
+            "sjediste": "",
+            "jib": "",
+            "direktor": "",
+            "kontakt": "",
+            "lokacije": {"Sve lokacije (Sumarni pregled)": []},
+            "datumi": {},
+            "detalji_periodike": {}
+        })
+        cursor.execute("INSERT INTO korisnici (username, password, podaci_firme) VALUES (?, ?, ?)", (username, password, pocetni_podaci))
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+def registruj_novu_firmu(username, password, naziv, djelatnost, radnika, lokacije_mapa, datumi_dict):
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        
+        pocetni_podaci = json.dumps({
+            "naziv": naziv,
+            "djelatnost": djelatnost,
+            "radnika": int(radnika) if str(radnika).isdigit() else 20,
+            "sjediste": "",
+            "jib": "",
+            "direktor": "",
+            "kontakt": "",
+            "lokacije": lokacije_mapa,
+            "datumi": datumi_dict,
+            "detalji_periodike": {}
+        })
+        
+        cursor.execute("INSERT INTO korisnici (username, password, podaci_firme) VALUES (?, ?, ?)", (username, password, pocetni_podaci))
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.IntegrityError:
+        return False
 
 def ucitaj_podatke_firme(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    
-    cursor.execute("SELECT naziv, djelatnost, radnika, sjediste, jib, direktor, kontakt FROM kompanije WHERE username = ?", (username,))
-    comp = cursor.fetchone()
-    if not comp:
-        conn.close()
-        return None
-        
-    naziv, djelatnost, radnika, sjediste, jib, direktor, kontakt = comp
-    
-    cursor.execute("SELECT lokacije_json FROM lokacije WHERE username = ?", (username,))
-    lok_row = cursor.fetchone()
-    lokacije = json.loads(lok_row[0]) if lok_row else {}
-    
-    cursor.execute("SELECT datumi_json FROM datumi WHERE username = ?", (username,))
-    dat_row = cursor.fetchone()
-    datumi = json.loads(dat_row[0]) if dat_row else {}
-    
+    cursor.execute("SELECT podaci_firme FROM korisnici WHERE username = ?", (username,))
+    row = cursor.fetchone()
     conn.close()
-    
-    return {
-        "naziv": naziv,
-        "djelatnost": djelatnost,
-        "radnika": radnika,
-        "sjediste": sjediste or "",
-        "jib": jib or "",
-        "direktor": direktor or "",
-        "kontakt": kontakt or "",
-        "lokacije": lokacije,
-        "datumi": datumi
-    }
+    if row and row[0]:
+        return json.loads(row[0])
+    return {}
 
-def snimi_podatke_firme(username, formData):
+def snimi_podatke_firme(username, podaci_dict):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    
-    cursor.execute("""
-        UPDATE kompanije 
-        SET naziv = ?, djelatnost = ?, radnika = ?, sjediste = ?, jib = ?, direktor = ?, kontakt = ? 
-        WHERE username = ?
-    """, (
-        formData['naziv'], 
-        formData.get('djelatnost', ''), 
-        formData.get('radnika', 0), 
-        formData.get('sjediste', ''), 
-        formData.get('jib', ''), 
-        formData.get('direktor', ''), 
-        formData.get('kontakt', ''), 
-        username
-    ))
-                    
-    cursor.execute("UPDATE lokacije SET lokacije_json = ? WHERE username = ?",
-                   (json.dumps(formData['lokacije']), username))
-                   
-    cursor.execute("UPDATE datumi SET datumi_json = ? WHERE username = ?",
-                   (json.dumps(formData['datumi']), username))
-                   
+    json_data = json.dumps(podaci_dict)
+    cursor.execute("UPDATE korisnici SET podaci_firme = ? WHERE username = ?", (json_data, username))
     conn.commit()
     conn.close()
 
-def registruj_novu_firmu(username, password, naziv, djelatnost, radnika, lokacije, datumi):
+def dodaj_masinu(username, naziv, kategorija, serijski_broj, broj_dozvole, ovlastena_kuca, datum_pregleda, datum_isteka, pdf_putanja=""):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    try:
-        cursor.execute("INSERT INTO kompanije (username, password, naziv, djelatnost, radnika) VALUES (?, ?, ?, ?, ?)",
-                       (username, password, naziv, djelatnost, radnika))
-        cursor.execute("INSERT INTO lokacije (username, lokacije_json) VALUES (?, ?)",
-                       (username, json.dumps(lokacije)))
-        cursor.execute("INSERT INTO datumi (username, datumi_json) VALUES (?, ?)",
-                       (username, json.dumps(datumi)))
-        conn.commit()
-        uspjeh = True
-    except sqlite3.IntegrityError:
-        uspjeh = False
+    cursor.execute("""
+        INSERT INTO masine (username, naziv, kategorija, serijski_broj, broj_dozvole, ovlastena_kuca, datum_pregleda, datum_isteka, pdf_putanja)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (username, naziv, kategorija, serijski_broj, broj_dozvole, ovlastena_kuca, datum_pregleda, datum_isteka, pdf_putanja))
+    conn.commit()
     conn.close()
-    return uspjeh
-
-# --- OSTALE FUNKCIJE ZA MAŠINE, OBUKE, LJEKARSKE, RIZIKE, MATERIJE I LZO ---
 
 def ucitaj_masine(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, naziv_masine, kategorija, serijski_broj, broj_dozvole, datum_pregleda, datum_isteka FROM masine_oprema WHERE username = ?", (username,))
-    rezultat = cursor.fetchall()
+    cursor.execute("SELECT id, naziv, kategorija, serijski_broj, broj_dozvole, ovlastena_kuca, datum_pregleda, datum_isteka, pdf_putanja FROM masine WHERE username = ?", (username,))
+    rows = cursor.fetchall()
     conn.close()
-    return rezultat
+    return rows
 
-def dodaj_masinu(username, naziv, kategorija, ser_broj, br_dozvole, d_pregleda, d_isteka):
+def dodaj_obuku(username, ime_prezime, radno_mjesto, vrsta_obuke, datum_obuke, datum_isteka, napomena, pdf_putanja=""):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO masine_oprema (username, naziv_masine, kategorija, serijski_broj, broj_dozvole, datum_pregleda, datum_isteka)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (username, naziv, kategorija, ser_broj, br_dozvole, d_pregleda, d_isteka))
-    conn.commit()
-    conn.close()
-
-def obrisi_masinu(masina_id):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM masine_oprema WHERE id = ?", (masina_id,))
+        INSERT INTO obuke (username, ime_prezime, radno_mjesto, vrsta_obuke, datum_obuke, datum_isteka, napomena, pdf_putanja)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (username, ime_prezime, radno_mjesto, vrsta_obuke, datum_obuke, datum_isteka, napomena, pdf_putanja))
     conn.commit()
     conn.close()
 
 def ucitaj_obuke(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, ime_prezime, radno_mjesto, vrsta_obuke, datum_obuke, datum_isteka, napomena FROM obuke_radnici WHERE username = ?", (username,))
-    res = cursor.fetchall()
+    cursor.execute("SELECT id, ime_prezime, radno_mjesto, vrsta_obuke, datum_obuke, datum_isteka, napomena, pdf_putanja FROM obuke WHERE username = ?", (username,))
+    rows = cursor.fetchall()
     conn.close()
-    return res
+    return rows
 
-def dodaj_obuku(username, ime, radno_mjesto, vrsta, d_obuke, d_isteka, napomena):
+def dodaj_ljekarski(username, ime_prezime, radno_mjesto, tip_pregleda, datum_pregleda, datum_isteka, ustanova, pdf_putanja=""):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO obuke_radnici (username, ime_prezime, radno_mjesto, vrsta_obuke, datum_obuke, datum_isteka, napomena)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (username, ime, radno_mjesto, vrsta, d_obuke, d_isteka, napomena))
-    conn.commit()
-    conn.close()
-
-def obrisi_obuku(obuka_id):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM obuke_radnici WHERE id = ?", (obuka_id,))
+        INSERT INTO ljekarski (username, ime_prezime, radno_mjesto, tip_pregleda, datum_pregleda, datum_isteka, ustanova, pdf_putanja)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (username, ime_prezime, radno_mjesto, tip_pregleda, datum_pregleda, datum_isteka, ustanova, pdf_putanja))
     conn.commit()
     conn.close()
 
 def ucitaj_ljekarske(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, ime_prezime, radno_mjesto, tip_pregleda, datum_pregleda, datum_isteka, zdravstvena_ustanova FROM ljekarski_pregledi WHERE username = ?", (username,))
-    res = cursor.fetchall()
+    cursor.execute("SELECT id, ime_prezime, radno_mjesto, tip_pregleda, datum_pregleda, datum_isteka, ustanova, pdf_putanja FROM ljekarski WHERE username = ?", (username,))
+    rows = cursor.fetchall()
     conn.close()
-    return res
+    return rows
 
-def dodaj_ljekarski(username, ime, radno_mjesto, tip, d_pregleda, d_isteka, ustanova):
+def dodaj_rizicno_mjesto(username, naziv_rm, opis_opasnosti, ime_radnika):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO ljekarski_pregledi (username, ime_prezime, radno_mjesto, tip_pregleda, datum_pregleda, datum_isteka, zdravstvena_ustanova)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (username, ime, radno_mjesto, tip, d_pregleda, d_isteka, ustanova))
-    conn.commit()
-    conn.close()
-
-def obrisi_ljekarski(ljekarski_id):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM ljekarski_pregledi WHERE id = ?", (ljekarski_id,))
+    cursor.execute("INSERT INTO rizicna_mjesta (username, naziv_rm, opis_opasnosti, ime_radnika) VALUES (?, ?, ?, ?)", (username, naziv_rm, opis_opasnosti, ime_radnika))
     conn.commit()
     conn.close()
 
 def ucitaj_rizicna_mjesta(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, naziv_radnog_mjesta, opis_opasnosti, ime_radnika WHERE username = ?", (username,))
-    res = cursor.fetchall()
+    cursor.execute("SELECT id, naziv_rm, opis_opasnosti, ime_radnika FROM rizicna_mjesta WHERE username = ?", (username,))
+    rows = cursor.fetchall()
     conn.close()
-    return res
+    return rows
 
-def dodaj_rizicno_mjesto(username, naziv_rm, opis, radnik):
+def dodaj_opasnu_materiju(username, naziv, kolicina, namjena, sds):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO radna_mjesta_rizik (username, naziv_radnog_mjesta, opis_opasnosti, ime_radnika)
-        VALUES (?, ?, ?, ?)
-    """, (username, naziv_rm, opis, radnik))
-    conn.commit()
-    conn.close()
-
-def obrisi_rizicno_mjesto(id_zapis):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM radna_mjesta_rizik WHERE id = ?", (id_zapis,))
+    cursor.execute("INSERT INTO opasne_materije (username, naziv_materije, kolicina_skladiste, namjena, posjeduje_sds) VALUES (?, ?, ?, ?, ?)", (username, naziv, kolicina, namjena, sds))
     conn.commit()
     conn.close()
 
@@ -352,48 +295,54 @@ def ucitaj_opasne_materije(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("SELECT id, naziv_materije, kolicina_skladiste, namjena, posjeduje_sds FROM opasne_materije WHERE username = ?", (username,))
-    res = cursor.fetchall()
+    rows = cursor.fetchall()
     conn.close()
-    return res
+    return rows
 
-def dodaj_opasnu_materiju(username, naziv, kolicina, namjena, sds):
+def dodaj_lzo(username, ime_prezime, radno_mjesto, naziv_lzo, datum_zaduzenja, napomena):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO opasne_materije (username, naziv_materije, kolicina_skladiste, namjena, posjeduje_sds)
-        VALUES (?, ?, ?, ?, ?)
-    """, (username, naziv, kolicina, namjena, sds))
-    conn.commit()
-    conn.close()
-
-def obrisi_opasnu_materiju(id_zapis):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM opasne_materije WHERE id = ?", (id_zapis,))
+    cursor.execute("INSERT INTO lzo (username, ime_prezime, radno_mjesto, naziv_lzo, datum_zaduzenja, napomena) VALUES (?, ?, ?, ?, ?, ?)", (username, ime_prezime, radno_mjesto, naziv_lzo, datum_zaduzenja, napomena))
     conn.commit()
     conn.close()
 
 def ucitaj_lzo(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, ime_radnika, radno_mjesto, naziv_lzo, datum_zaduzenja, napomena FROM lzo_zaduzenja WHERE username = ?", (username,))
-    res = cursor.fetchall()
+    cursor.execute("SELECT id, ime_prezime, radno_mjesto, naziv_lzo, datum_zaduzenja, napomena FROM lzo WHERE username = ?", (username,))
+    rows = cursor.fetchall()
     conn.close()
-    return res
+    return rows
 
-def dodaj_lzo(username, ime, radno_mjesto, naziv_lzo, datum, napomena):
+# --- NOVE FUNKCIJE ZA POSUDE I POVREDE ---
+def dodaj_posudu_pod_pritiskom(username, naziv, inv_br, pritisak, datum_pr, datum_ist, ovl_kuca):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO lzo_zaduzenja (username, ime_radnika, radno_mjesto, naziv_lzo, datum_zaduzenja, napomena)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (username, ime, radno_mjesto, naziv_lzo, datum, napomena))
+    cursor.execute("INSERT INTO posude_pod_pritiskom (username, naziv_opreme, inventarni_broj, radni_pritisak, datum_pregleda, datum_isteka, ovlastena_kuca) VALUES (?, ?, ?, ?, ?, ?, ?)", 
+                   (username, naziv, inv_br, pritisak, datum_pr, datum_ist, ovl_kuca))
     conn.commit()
     conn.close()
 
-def obrisi_lzo(lzo_id):
+def ucitaj_posude_pod_pritiskom(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM lzo_zaduzenja WHERE id = ?", (lzo_id,))
+    cursor.execute("SELECT id, naziv_opreme, inventarni_broj, radni_pritisak, datum_pregleda, datum_isteka, ovlastena_kuca FROM posude_pod_pritiskom WHERE username = ?", (username,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def dodaj_povredu_na_radu(username, ime, rm, datum, vrsta, uzrok, prijava):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO povrede_na_radu (username, ime_prezime, radno_mjesto, datum_povrede, vrsta_tezina_povrede, uzrok_povrede, prijava_inspekciji) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                   (username, ime, rm, datum, vrsta, uzrok, prijava))
     conn.commit()
     conn.close()
+
+def ucitaj_povrede_na_radu(username):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, ime_prezime, radno_mjesto, datum_povrede, vrsta_tezina_povrede, uzrok_povrede, prijava_inspekciji FROM povrede_na_radu WHERE username = ?", (username,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
