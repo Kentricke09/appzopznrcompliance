@@ -1,4 +1,3 @@
-# database.py
 import sqlite3
 import json
 import os
@@ -126,6 +125,24 @@ def inicijalizuj_bazu():
             vrsta_tezina_povrede TEXT,
             uzrok_povrede TEXT,
             prijava_inspekciji TEXT
+        )
+    """)
+
+    # --- NOVA TABELA ZA PP APARATE SA DVOJNIM TAJMEROM ---
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS pp_aparati (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            tip_aparata TEXT,
+            inventarni_broj TEXT,
+            lokacija TEXT,
+            datum_servisa_6m TEXT,
+            istek_servisa_6m TEXT,
+            datum_ispitivanja_5g TEXT,
+            istek_ispitivanja_5g TEXT,
+            serviser_kuca TEXT,
+            broj_zapisnika TEXT,
+            pdf_putanja TEXT
         )
     """)
 
@@ -314,7 +331,6 @@ def ucitaj_lzo(username):
     conn.close()
     return rows
 
-# --- NOVE FUNKCIJE ZA POSUDE I POVREDE ---
 def dodaj_posudu_pod_pritiskom(username, naziv, inv_br, pritisak, datum_pr, datum_ist, ovl_kuca):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -343,6 +359,41 @@ def ucitaj_povrede_na_radu(username):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("SELECT id, ime_prezime, radno_mjesto, datum_povrede, vrsta_tezina_povrede, uzrok_povrede, prijava_inspekciji FROM povrede_na_radu WHERE username = ?", (username,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+# --- NOVE FUNKCIJE ZA PP APARATE (DVOJNI TAJMER) ---
+def dodaj_pp_aparat(username, tip_aparata, inventarni_broj, lokacija, datum_servisa_6m, istek_servisa_6m, datum_ispitivanja_5g, istek_ispitivanja_5g, serviser_kuca, broj_zapisnika="", pdf_putanja=""):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO pp_aparati (
+            username, tip_aparata, inventarni_broj, lokacija, 
+            datum_servisa_6m, istek_servisa_6m, 
+            datum_ispitivanja_5g, istek_ispitivanja_5g, 
+            serviser_kuca, broj_zapisnika, pdf_putanja
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        username, tip_aparata, inventarni_broj, lokacija, 
+        datum_servisa_6m, istek_servisa_6m, 
+        datum_ispitivanja_5g, istek_ispitivanja_5g, 
+        serviser_kuca, broj_zapisnika, pdf_putanja
+    ))
+    conn.commit()
+    conn.close()
+
+def ucitaj_pp_aparate(username):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, tip_aparata, inventarni_broj, lokacija, 
+               datum_servisa_6m, istek_servisa_6m, 
+               datum_ispitivanja_5g, istek_ispitivanja_5g, 
+               serviser_kuca, broj_zapisnika, pdf_putanja 
+        FROM pp_aparati 
+        WHERE username = ?
+    """, (username,))
     rows = cursor.fetchall()
     conn.close()
     return rows
