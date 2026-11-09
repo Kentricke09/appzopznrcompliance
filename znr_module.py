@@ -308,63 +308,79 @@ def prikazi_povrede_tab(username):
 
 def prikazi_zop_tab(username):
     st.markdown("### 🧯 Zaštita od požara (ZOP)")
-    tip = st.selectbox("Element ZOP:", [
-        "Aparati za početno gašenje požara (PP aparati)", 
-        "Unutrašnja i vanjska hidrantska mreža", 
-        "Vatrodojava", 
-        "Automatske prskalice (sprinkleri)",
-        "Specijalni sistemi s plinom, pjenom ili aerosolom",
-        "Sistemi za detekciju opasnih plinova (plinodojava)"
-    ])
     
-    if tip == "Aparati za početno gašenje požara (PP aparati)":
-        st.markdown("#### 🧯 Unos PP aparata sa dvojnim tajmerom")
-        st.caption("Za svaki PP aparat prati se redovni servis (6 mjeseci) i kontrolno ispitivanje posude pod pritiskom (5 godina).")
-        
-        with st.form("forma_pp_dvojni_tajmer"):
-            col_p1, col_p2, col_p3 = st.columns(3)
-            with col_p1:
-                tip_pp = st.selectbox("Tip PP aparata:", ["S-1", "S-2", "S-3", "S-6", "S-9", "CO2-2", "CO2-5", "V-9", "Pjena-9", "Ostalo"])
-            with col_p2:
-                inv_br = st.text_input("Inventarni / Serijski broj:")
-            with col_p3:
-                lokacija = st.text_input("Lokacija (npr. Hodnik I sprat, Pogon 2):")
+    sub_zop = st.radio("Izaberite ZOP element / opremu:", [
+        "Aparati za početno gašenje požara (PP aparati)", 
+        "Ostali ZOP sistemi (Hidranti, vatrodojava, sprinkleri...)"
+    ], horizontal=True)
+    
+    st.markdown("---")
 
+    if sub_zop == "Aparati za početno gašenje požara (PP aparati)":
+        with st.form("forma_pp_aparati_detaljna"):
+            st.markdown("#### 🧯 Unos PP aparata (Identifikacija i dvostruki rokovi)")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                tip_aparata = st.selectbox("Tip aparata:", ["S-6", "S-9", "S-50", "CO2-5", "CO2-10", "P-6", "V-9"])
+            with col2:
+                inventarni_broj = st.text_input("Identifikacioni / Inventarni broj aparata (npr. PP-01):")
+            
+            lokacija = st.text_input("Lokacija u objektu (npr. Hodnik I sprat / Pogon):")
+            
             st.markdown("---")
-            col_t1, col_t2 = st.columns(2)
-            with col_t1:
-                st.markdown("<b>1. Redovni servis (6 mjeseci):</b>", unsafe_allow_html=True)
-                datum_6m = st.date_input("Datum redovnog servisa:", value=date.today(), key="pp_d_6m")
-                istek_6m = datum_6m + timedelta(days=182)
-                st.info(f"📅 Rok važenja servisa: **{istek_6m}**")
-
-            with col_t2:
-                st.markdown("<b>2. Ispitivanje posude pod pritiskom (5 godina):</b>", unsafe_allow_html=True)
-                datum_5g = st.date_input("Datum ispitivanja posude:", value=date.today(), key="pp_d_5g")
-                istek_5g = datum_5g + timedelta(days=1826)
-                st.info(f"📅 Rok važenja posude: **{istek_5g}**")
-
+            st.markdown("##### 📅 1. Šestomjesečni pregled (Redovni servis)")
+            datum_servisa_6m = st.date_input("Datum zadnjeg šestomjesečnog pregleda:")
+            dani_6m = int(6 * 30.42)
+            istek_servisa_6m = datum_servisa_6m + timedelta(days=dani_6m)
+            st.info(f"↳ Istek šestomjesečnog servisa: **{istek_servisa_6m}**")
+            
+            st.markdown("##### 📅 2. Petogodišnji pregled (Ispitivanje posude pod pritiskom - atest)")
+            datum_ispitivanja_5g = st.date_input("Datum zadnjeg petogodišnjeg pregleda (atesta):")
+            dani_5g = int(60 * 30.42)
+            istek_ispitivanja_5g = datum_ispitivanja_5g + timedelta(days=dani_5g)
+            st.info(f"↳ Istek petogodišnjeg atesta posude: **{istek_ispitivanja_5g}**")
+            
             st.markdown("---")
-            col_s1, col_s2 = st.columns(2)
-            with col_s1:
-                serviser = st.text_input("Ovlašteni serviser / Kuća:")
-            with col_s2:
-                br_zapisnika = st.text_input("Broj zapisnika / naljepnice:")
+            serviser_kuca = st.text_input("Ovlaštena servisna kuća / Serviser:")
+            broj_zapisnika = st.text_input("Broj zapisnika / potvrde o servisu:")
+            
+            if st.form_submit_button("Spremi PP aparat"):
+                if not inventarni_broj.strip():
+                    st.warning("⚠️ Molimo unesite identifikacioni/inventarni broj aparata!")
+                else:
+                    database.dodaj_pp_aparat(
+                        username, tip_aparata, inventarni_broj, lokacija,
+                        str(datum_servisa_6m), str(istek_servisa_6m),
+                        str(datum_ispitivanja_5g), str(istek_ispitivanja_5g),
+                        serviser_kuca, broj_zapisnika, ""
+                    )
+                    st.success(f"✅ PP aparat ({tip_aparata} - {inventarni_broj}) uspješno spremljen!")
+                    st.rerun()
 
-            if st.form_submit_button("💾 Spremi PP aparat"):
-                database.dodaj_pp_aparat(
-                    username, tip_pp, inv_br, lokacija, 
-                    str(datum_6m), str(istek_6m), 
-                    str(datum_5g), str(istek_5g), 
-                    serviser, br_zapisnika, ""
-                )
-                st.success(f"✅ PP aparat {tip_pp} (Inv: {inv_br}) uspješno spremljen!")
-                st.rerun()
+        st.markdown("#### 📋 Pregled unesenih PP aparata:")
+        pp_rows = database.ucitaj_pp_aparate(username)
+        if pp_rows:
+            data_pp = [["Tip", "Inv. br.", "Lokacija", "Servis (6m)", "Istek 6m", "Atest (5g)", "Istek 5g", "Serviser"]] + \
+                      [[p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]] for p in pp_rows]
+            st.table(data_pp)
+        else:
+            st.info("Nema unesenih PP aparata.")
 
     else:
         with st.form("forma_zop_detaljna"):
+            st.markdown("#### 🧯 Ostali ZOP sistemi i instalacije")
+            tip = st.selectbox("Element ZOP:", [
+                "Unutrašnja i vanjska hidrantska mreža", 
+                "Vatrodojava", 
+                "Automatske prskalice (sprinkleri)",
+                "Specijalni sistemi s plinom, pjenom ili aerosolom",
+                "Sistemi za detekciju opasnih plinova (plinodojava)"
+            ])
+            
             datum_pregleda = st.date_input("Datum izvršenog pregleda:")
-            mjeseci_roka = config.rokovi_mjeseci.get(tip, 6)
+            
+            mjeseci_roka = config.rokovi_mjeseci.get(tip, 12)
             dani_roka = int(mjeseci_roka * 30.42)
             izracunati_istek = datum_pregleda + timedelta(days=dani_roka)
             
@@ -378,25 +394,14 @@ def prikazi_zop_tab(username):
                 st.success(f"✅ Podaci za {tip} uspješno spremljeni! (Istek: {izracunati_istek})")
                 st.rerun()
 
-    st.markdown("#### 📋 Pregled PP aparata (Dvojni tajmer):")
-    pp_rows = database.ucitaj_pp_aparate(username)
-    if pp_rows:
-        data_pp = [["Tip", "Inv. broj", "Lokacija", "Istek servisa (6m)", "Istek posude (5g)", "Serviser", "Zapisnik"]]
-        for p in pp_rows:
-            # p: (id, tip_aparata, inventarni_broj, lokacija, datum_servisa_6m, istek_servisa_6m, datum_ispitivanja_5g, istek_ispitivanja_5g, serviser_kuca, broj_zapisnika, pdf_putanja)
-            data_pp.append([p[1], p[2], p[3], p[5], p[7], p[8], p[9]])
-        st.table(data_pp)
-    else:
-        st.info("Nema unesenih PP aparata sa dvojnim tajmerom.")
-
-    st.markdown("#### 📋 Pregled ostalih ZOP elemenata:")
-    sve_masine = database.ucitaj_masine(username)
-    zop_rows = [m for m in sve_masine if m[2] == "ZOP"]
-    if zop_rows:
-        data_zop = [["Element ZOP", "Zapisnik", "Pregled", "Istek", "Serviser"]] + [[z[1], z[4], z[6], z[7], z[5]] for z in zop_rows]
-        st.table(data_zop)
-    else:
-        st.info("Nema unesenih ostalih ZOP elemenata.")
+        st.markdown("#### 📋 Pregled unesenih ostalih ZOP elemenata:")
+        sve_masine = database.ucitaj_masine(username)
+        zop_rows = [m for m in sve_masine if m[2] == "ZOP"]
+        if zop_rows:
+            data_zop = [["Element ZOP", "Zapisnik", "Pregled", "Istek", "Serviser"]] + [[z[1], z[4], z[6], z[7], z[5]] for z in zop_rows]
+            st.table(data_zop)
+        else:
+            st.info("Nema unesenih ostalih ZOP elemenata.")
 
 # --- 3. GLAVNA ADMINISTRACIJA ---
 def prikazi_administraciju(formData, current_user):
@@ -572,28 +577,25 @@ def generisi_clan61_pdf(username, formData):
     elements.append(Spacer(1, 8))
 
     # e) Pregledi i ispitivanja (Mašine, instalacije, posude, PP aparati)
-    elements.append(Paragraph("<b>e) Pregledi i ispitivanja radne sredine, PP aparata i sredstava za rad</b>", h2_style))
+    elements.append(Paragraph("<b>e) Pregledi i ispitivanja radne sredine i sredstava za rad</b>", h2_style))
     mas_rows = database.ucitaj_masine(username)
     pp_rows = database.ucitaj_pp_aparate(username)
     
-    data_mas = [["Naziv / Oprema", "Kategorija / Tip", "Broj zapisnika", "Pregled", "Istek", "Kuća"]]
-    
+    combined_rows = []
     if mas_rows:
         for m in mas_rows:
-            data_mas.append([m[1], m[2], m[4], m[6], m[7], m[5]])
-            
+            combined_rows.append([m[1], m[2], m[4], m[6], m[7], m[5]])
     if pp_rows:
         for p in pp_rows:
-            # p: (id, tip_aparata, inv_br, lokacija, dat_6m, istek_6m, dat_5g, istek_5g, serviser, br_zap, pdf)
-            data_mas.append([f"PP {p[1]} ({p[2]})", "ZOP (Servis 6m)", p[9], p[4], p[5], p[8]])
-            data_mas.append([f"PP {p[1]} ({p[2]})", "ZOP (Posuda 5g)", p[9], p[6], p[7], p[8]])
-            
-    if len(data_mas) > 1:
-        t_mas = Table(data_mas, colWidths=[120, 120, 75, 65, 65, 55])
+            combined_rows.append([f"PP aparat: {p[1]} ({p[2]})", "ZOP (PP aparat)", f"Servis: {p[4]} | Atest: {p[6]}", f"6m: {p[5]}", f"5g: {p[7]}", p[8]])
+
+    if combined_rows:
+        data_mas = [["Naziv / Oprema", "Kategorija / Tip", "Zapisnik / Pregled", "Istek (6m / Redovni)", "Istek (5g / Atest)", "Kuća"]] + combined_rows
+        t_mas = Table(data_mas, colWidths=[110, 100, 95, 75, 75, 45])
         t_mas.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTNAME', (0,0), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,0), (-1,-1), 7)]))
         elements.append(t_mas)
     else:
-        elements.append(Paragraph("Nema pregleda i ispitivanja mašina, PP aparata niti radne sredine.", normal_style))
+        elements.append(Paragraph("Nema pregleda i ispitivanja mašina i radne sredine.", normal_style))
     elements.append(Spacer(1, 8))
 
     # f) Povrede na radu
@@ -624,7 +626,7 @@ def generisi_clan61_pdf(username, formData):
     return buffer.getvalue()
 
 
-# --- 5. DASHBOARD ---
+# --- 4. DASHBOARD ---
 def prikazi_znr_formu(formData, current_user):
     st.markdown("### 📊 Dashboard i Status usklađenosti poslovanja")
     st.markdown("---")
@@ -663,21 +665,19 @@ def prikazi_znr_formu(formData, current_user):
         st.warning("⚠️ Biblioteka `reportlab` se trenutno učitava na serveru. Molimo osvježite stranicu za par sekundi.")
 
     st.markdown("---")
-    st.markdown("#### 📋 Pregled zakonskih obaveza:")
+    st.markdown("#### 📋 Pregled zakonskih obaveza i dvostrukih rokova (PP aparati, mašine i kadrovi):")
     
     lokacije_dict = formData.get("lokacije", {})
     aktivne_obaveze = lokacije_dict.get("Sve lokacije (Sumarni pregled)", [])
     
-    # Učitaj unose iz baze (mašine, posude, PP aparati, obuke, lzo)
     sve_masine = database.ucitaj_masine(current_user) if current_user else []
     sve_posude = database.ucitaj_posude_pod_pritiskom(current_user) if current_user else []
-    sve_pp = database.ucitaj_pp_aparate(current_user) if current_user else []
     sve_obuke = database.ucitaj_obuke(current_user) if current_user else []
     sve_lzo = database.ucitaj_lzo(current_user) if current_user else []
+    sve_pp_aparati = database.ucitaj_pp_aparate(current_user) if current_user else []
     
     baza_detalja = {}
     
-    # 1. Mapiranje mašina, instalacija i ostalih ZOP elemenata
     for m in sve_masine:
         kategorija_stavke = m[2]
         naziv_stavke = m[1]
@@ -691,7 +691,6 @@ def prikazi_znr_formu(formData, current_user):
             baza_detalja[kategorija_stavke] = detalj_info
             baza_detalja[naziv_stavke] = detalj_info
 
-    # 2. Mapiranje posuda pod pritiskom
     for p in sve_posude:
         if len(p) > 5 and p[5]:
             baza_detalja["Posude pod pritiskom i kompresori"] = {
@@ -700,7 +699,6 @@ def prikazi_znr_formu(formData, current_user):
                 "kuca": p[6] if len(p) > 6 and p[6] else "N/A"
             }
 
-    # 3. Mapiranje obuka
     for o in sve_obuke:
         vrsta_obuke = o[3]
         datum_isteka_obuke = o[5]
@@ -716,7 +714,6 @@ def prikazi_znr_formu(formData, current_user):
             elif "znr" in vrsta_obuke.lower():
                 baza_detalja["Obuka i provjera znanja iz zaštite na radu (ZNR)"] = detalj_obuka
 
-    # 4. Mapiranje LZO
     if sve_lzo:
         zadnji_lzo_datum = sve_lzo[-1][4] if len(sve_lzo[-1]) > 4 else "N/A"
         baza_detalja["Sredstva i oprema lične zaštite (LZO)"] = {
@@ -725,46 +722,47 @@ def prikazi_znr_formu(formData, current_user):
             "kuca": "Interno"
         }
 
+    # === POSEBAN PRIKAZ DVOSTRUKIH SEMAFORA ZA PP APARATE ===
+    if sve_pp_aparati:
+        st.markdown("##### 🧯 Status PP aparata (Dvostruki tajmeri):")
+        for pp in sve_pp_aparati:
+            pp_id, tip_, inv_, lok_, d6m, i6m, d5g, i5g, serv_, zaps_ = pp[0], pp[1], pp[2], pp[3], pp[4], pp[5], pp[6], pp[7], pp[8], pp[9]
+            
+            try:
+                dt_6m = date.fromisoformat(i6m)
+                p_6m = (dt_6m - date.today()).days
+                if p_6m < 0:
+                    sem_6m = "🔴 **ISTEKLO (6m)**"
+                elif p_6m <= 30:
+                    sem_6m = "🟡 **USKORO (6m)**"
+                else:
+                    sem_6m = "🟢 **USKLAĐENO (6m)**"
+            except Exception:
+                sem_6m = "🟢 **USKLAĐENO (6m)**"
+
+            try:
+                dt_5g = date.fromisoformat(i5g)
+                p_5g = (dt_5g - date.today()).days
+                if p_5g < 0:
+                    sem_5g = "🔴 **ISTEKLO ATEST POSUDE (5g)**"
+                elif p_5g <= 30:
+                    sem_5g = "🟡 **USKORO ATEST POSUDE (5g)**"
+                else:
+                    sem_5g = "🟢 **USKLAĐENO (5g)**"
+            except Exception:
+                sem_5g = "🟢 **USKLAĐENO (5g)**"
+
+            st.markdown(f"🧯 **{tip_}** (Inv. br: *{inv_}* — Lokacija: *{lok_}*)")
+            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;• {sem_6m} — Redovni servis (6m) važi do: **{i6m}** (Zapisnik: {zaps_})")
+            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;• {sem_5g} — Ispitivanje posude (5g) važi do: **{i5g}** (Serviser: {serv_})")
+        st.markdown("---")
+
     if aktivne_obaveze:
         for obaveza in aktivne_obaveze:
             info = config.klijent_konfiguracija.get(obaveza, {})
             periodika = info.get("periodika", False)
             mjeseci = info.get("mjeseci", 0)
             
-            # Specijalni prikaz za PP aparate na Dashboardu sa dvojnim tajmerom
-            if "pp aparati" in obaveza.lower() or "aparati za početno gašenje" in obaveza.lower():
-                st.markdown(f"🧯 **{obaveza}** &nbsp;*(Dvojni tajmer po aparatu)*:")
-                if sve_pp:
-                    for pp in sve_pp:
-                        # pp: (id, tip_aparata, inv_br, lokacija, dat_6m, istek_6m, dat_5g, istek_5g, serviser, br_zap, pdf)
-                        tip_p, inv_p, lok_p, istek_6m, istek_5g = pp[1], pp[2], pp[3], pp[5], pp[7]
-                        
-                        # Provjera 6m servisa
-                        try:
-                            d6 = date.fromisoformat(istek_6m)
-                            p_d6 = (d6 - date.today()).days
-                            if p_d6 < 0: sem_6m = "🔴 **Servis (6m) ISTEKAO**"
-                            elif p_d6 <= 30: sem_6m = "🟡 **Servis (6m) SKORO**"
-                            else: sem_6m = "🟢 **Servis (6m) OK**"
-                        except Exception:
-                            sem_6m = "⚪ Servis (6m) N/A"
-
-                        # Provjera 5g ispitivanja posude
-                        try:
-                            d5 = date.fromisoformat(istek_5g)
-                            p_d5 = (d5 - date.today()).days
-                            if p_d5 < 0: sem_5g = "🔴 **Posuda (5g) ISTEKLA**"
-                            elif p_d5 <= 30: sem_5g = "🟡 **Posuda (5g) SKORO**"
-                            else: sem_5g = "🟢 **Posuda (5g) OK**"
-                        except Exception:
-                            sem_5g = "⚪ Posuda (5g) N/A"
-
-                        st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;• **{tip_p}** (Inv: *{inv_p}*, Lok: *{lok_p}*) → {sem_6m} *(Važi do: {istek_6m})* | {sem_5g} *(Važi do: {istek_5g})*")
-                else:
-                    st.markdown("&nbsp;&nbsp;&nbsp;&nbsp;🔴 **NIJE USKLAĐENO** — *Nema unesenih PP aparata u bazi (Unesite ih u Administraciji)*")
-                st.markdown("---")
-                continue
-
             if periodika and mjeseci > 0:
                 nadjena_stavka = None
                 for kat, val in baza_detalja.items():
@@ -791,7 +789,7 @@ def prikazi_znr_formu(formData, current_user):
                         detalj_boja = f"Važi do: **{zadnji_dat_str}** | Br. zapisnika: *{zapisnik_broj}* | Izvršilac: *{kuca_naziv}*"
                     except Exception:
                         semafor = "🟢 **USKLAĐENO**"
-                        detalj_boja = f"Evidentirano (Zaduženje LZO)"
+                        detalj_boja = f"Evidentirano"
                 else:
                     semafor = "🔴 **NIJE USKLAĐENO**"
                     detalj_boja = "Potrebno dopuniti u administraciji"
