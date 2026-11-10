@@ -39,7 +39,7 @@ except Exception:
 # --- 1. MODULI ZA KADROVE ---
 
 def prikazi_evidenciju_obuka(username):
-    st.markdown("### 📚 Evidencija obuka (Član 61. tačka d)")
+    st.markdown("### Evidencija obuka (Član 61. tačka d)")
     with st.form("forma_obuka"):
         ime_r = st.text_input("Ime i prezime radnika:")
         naziv_obuke = st.selectbox("Vrsta obuke:", ["Obuka iz ZNR", "Obuka iz ZNR - povećani rizik", "Obuka iz ZOP"])
@@ -48,16 +48,16 @@ def prikazi_evidenciju_obuka(username):
         mjeseci_roka = 24
         dani_roka = int(mjeseci_roka * 30.42)
         izracunati_istek = datum_o + timedelta(days=dani_roka)
-        st.info(f"📅 Automatski izračunati datum isteka obuke ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
+        st.info(f"Automatski izračunati datum isteka obuke ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
 
         br_zapisnika = st.text_input("Broj zapisnika:")
         ovlastena_kuca = st.text_input("Ovlaštena organizacija:")
         if st.form_submit_button("Spremi obuku"):
             database.dodaj_obuku(username, ime_r, "N/A", naziv_obuke, str(datum_o), str(izracunati_istek), f"Zapisnik: {br_zapisnika}, Kuća: {ovlastena_kuca}")
-            st.success(f"✅ Obuka uspješno spremljena (Istek: {izracunati_istek})!")
+            st.success(f"Obuka uspješno spremljena (Istek: {izracunati_istek})!")
             st.rerun()
 
-    st.markdown("#### 📋 Pregled unesenih obuka:")
+    st.markdown("#### Pregled unesenih obuka:")
     obuke_rows = database.ucitaj_obuke(username)
     if obuke_rows:
         data_ob = [["Radnik", "Vrsta obuke", "Datum obuke", "Datum isteka", "Napomena"]] + [[o[1], o[3], o[4], o[5], o[6]] for o in obuke_rows]
@@ -66,7 +66,7 @@ def prikazi_evidenciju_obuka(username):
         st.info("Nema unesenih obuka.")
 
 def prikazi_evidenciju_ljekarskih(username):
-    st.markdown("### 🩺 Ljekarski pregledi (Član 61. tačka g)")
+    st.markdown("### Ljekarski pregledi (Član 61. tačka g)")
     st.caption("Za prethodne preglede datum isteka nije obavezan, dok se za periodične unosi rok važenja.")
     with st.form("forma_ljekarski"):
         ime_r = st.text_input("Ime i prezime radnika:")
@@ -80,10 +80,10 @@ def prikazi_evidenciju_ljekarskih(username):
         ustanova = st.text_input("Zdravstvena ustanova / Specijalista:")
         if st.form_submit_button("Spremi ljekarski pregled"):
             database.dodaj_ljekarski(username, ime_r, radno_mjesto, tip_pregleda, str(datum_pr), str(datum_ist) if datum_ist else "N/A", ustanova)
-            st.success("✅ Ljekarski pregled uspješno spremljen!")
+            st.success("Ljekarski pregled uspješno spremljen!")
             st.rerun()
 
-    st.markdown("#### 📋 Pregled ljekarskih pregleda:")
+    st.markdown("#### Pregled ljekarskih pregleda:")
     lj_rows = database.ucitaj_ljekarske(username)
     if lj_rows:
         data_lj = [["Radnik", "Mjesto", "Tip", "Pregled", "Istek", "Ustanova"]] + [[l[1], l[2], l[3], l[4], l[5], l[6]] for l in lj_rows]
@@ -92,17 +92,17 @@ def prikazi_evidenciju_ljekarskih(username):
         st.info("Nema unesenih ljekarskih pregleda.")
 
 def prikazi_radna_mjesta_sa_povećanim_rizikom_tab(username):
-    st.markdown("### ⚠️ Radna mjesta sa povećanim rizikom (Član 61. tač. a i b)")
+    st.markdown("### Radna mjesta sa povećanim rizikom (Član 61. tač. a i b)")
     with st.form("forma_rizicna"):
         naziv_rm = st.text_input("Naziv radnog mjesta sa povećanim rizikom:")
         opis = st.text_area("Opis opasnosti i štetnosti:")
         radnik = st.text_input("Raspoređeni radnik (ime i prezime):")
         if st.form_submit_button("Spremi rizično mjesto"):
             database.dodaj_rizicno_mjesto(username, naziv_rm, opis, radnik)
-            st.success("✅ Rizično mjesto i radnik spremljeni!")
+            st.success("Rizično mjesto i radnik spremljeni!")
             st.rerun()
 
-    st.markdown("#### 📋 Pregled rizičnih mjesta:")
+    st.markdown("#### Pregled rizičnih mjesta:")
     rm_rows = database.ucitaj_rizicna_mjesta(username)
     if rm_rows:
         data_rm = [["Radno mjesto", "Opis opasnosti", "Radnik"]] + [[r[1], r[2], r[3]] for r in rm_rows]
@@ -111,7 +111,7 @@ def prikazi_radna_mjesta_sa_povećanim_rizikom_tab(username):
         st.info("Nema radnih mjesta sa povećanim rizikom.")
 
 def prikazi_lzo_tab(username):
-    st.markdown("### 🪖 LZO Zaduženja (Lična zaštitna oprema)")
+    st.markdown("### LZO Zaduženja (Lična zaštitna oprema)")
     standardna_lzo = [
         "Zaštitni šljem", 
         "Zaštitne cipele/čizme sa čeličnom kapicom", 
@@ -130,10 +130,10 @@ def prikazi_lzo_tab(username):
         napomena = st.text_input("Napomena / Veličina / Serijski broj:")
         if st.form_submit_button("Zaduži LZO"):
             database.dodaj_lzo(username, ime_r, radno_mjesto, naziv_lzo, str(datum_zad), napomena)
-            st.success("✅ LZO zaduženje uspješno evidentirano!")
+            st.success("LZO zaduženje uspješno evidentirano!")
             st.rerun()
 
-    st.markdown("#### 📋 Pregled LZO zaduženja:")
+    st.markdown("#### Pregled LZO zaduženja:")
     lzo_rows = database.ucitaj_lzo(username)
     if lzo_rows:
         data_lzo = [["Radnik", "Radno mjesto", "Oprema", "Datum", "Napomena"]] + [[lz[1], lz[2], lz[3], lz[4], lz[5]] for lz in lzo_rows]
@@ -144,7 +144,7 @@ def prikazi_lzo_tab(username):
 # --- 2. MODULI ZA RESURSE I ZOP ---
 
 def prikazi_registar_masina(username):
-    st.markdown("### ⚙️ Resursi, instalacije i oprema (Član 61. tačka e)")
+    st.markdown("### Resursi, instalacije i oprema (Član 61. tačka e)")
     
     sub_resurs = st.radio("Izaberite oblast ispitivanja / opreme:", [
         "Mašine i oprema", 
@@ -159,7 +159,7 @@ def prikazi_registar_masina(username):
 
     if "Mašine" in sub_resurs:
         with st.form("forma_masina_detaljna"):
-            st.markdown("#### ⚙️ Unos mašine / opreme")
+            st.markdown("#### Unos mašine / opreme")
             naziv = st.text_input("Naziv mašine / opreme:")
             kategorija = st.selectbox("Kategorija:", ["Radna oprema i strojevi", "Unutrašnji transport", "Liftovi i platforme", "Kotlovnice"])
             ser_inv_br = st.text_input("Serijski ili Inventarni broj:")
@@ -169,18 +169,18 @@ def prikazi_registar_masina(username):
             mjeseci_roka = config.rokovi_mjeseci.get("Radna oprema i strojevi na mehanizirani pogon", 36)
             dani_roka = int(mjeseci_roka * 30.42)
             izracunati_istek = datum_dozvole + timedelta(days=dani_roka)
-            st.info(f"📅 Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
+            st.info(f"Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
             
             ovlastena_kuca = st.text_input("Ovlaštena organizacija (ko je izvršio pregled):")
             
             if st.form_submit_button("Spremi mašinu"):
                 database.dodaj_masinu(username, naziv, kategorija, ser_inv_br, br_dozvole, ovlastena_kuca, str(datum_dozvole), str(izracunati_istek), "")
-                st.success(f"✅ Mašina uspješno spremljena (Istek atesta: {izracunati_istek})!")
+                st.success(f"Mašina uspješno spremljena (Istek atesta: {izracunati_istek})!")
                 st.rerun()
 
     elif sub_resurs == "Električne instalacije":
         with st.form("forma_struja"):
-            st.markdown("#### ⚡ Pregled i ispitivanje električnih instalacija")
+            st.markdown("#### Pregled i ispitivanje električnih instalacija")
             naziv_objekta = st.text_input("Dio objekta / Pogon / Tabla:", value="Glavni elektro ormar / Pogon")
             br_zapisnika = st.text_input("Broj zapisnika / izvještaja:")
             datum_pr = st.date_input("Datum izvršenog ispitivanja:")
@@ -188,18 +188,18 @@ def prikazi_registar_masina(username):
             mjeseci_roka = config.rokovi_mjeseci.get("Električne instalacije", 36)
             dani_roka = int(mjeseci_roka * 30.42)
             izracunati_istek = datum_pr + timedelta(days=dani_roka)
-            st.info(f"📅 Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
+            st.info(f"Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
             
             ovlastena_kuca = st.text_input("Ovlaštena organizacija (izvršilac):")
             
             if st.form_submit_button("Spremi ispitivanje električnih instalacija"):
                 database.dodaj_masinu(username, naziv_objekta, "Električne instalacije", "N/A", br_zapisnika, ovlastena_kuca, str(datum_pr), str(izracunati_istek), "")
-                st.success(f"✅ Zapisnik za električne instalacije spremljen (Istek: {izracunati_istek})!")
+                st.success(f"Zapisnik za električne instalacije spremljen (Istek: {izracunati_istek})!")
                 st.rerun()
 
     elif sub_resurs == "Gromobranske instalacije":
         with st.form("forma_gromobran"):
-            st.markdown("#### ⚡ Pregled i ispitivanje gromobranskih instalacija")
+            st.markdown("#### Pregled i ispitivanje gromobranskih instalacija")
             naziv_objekta = st.text_input("Lokacija / Objekat:", value="Gromobranska instalacija objekta")
             br_zapisnika = st.text_input("Broj zapisnika / izvještaja:")
             datum_pr = st.date_input("Datum izvršenog ispitivanja:")
@@ -207,18 +207,18 @@ def prikazi_registar_masina(username):
             mjeseci_roka = config.rokovi_mjeseci.get("Gromobranske instalacije", 24)
             dani_roka = int(mjeseci_roka * 30.42)
             izracunati_istek = datum_pr + timedelta(days=dani_roka)
-            st.info(f"📅 Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
+            st.info(f"Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
             
             ovlastena_kuca = st.text_input("Ovlaštena organizacija (izvršilac):")
             
             if st.form_submit_button("Spremi ispitivanje gromobrana"):
                 database.dodaj_masinu(username, naziv_objekta, "Gromobranske instalacije", "N/A", br_zapisnika, ovlastena_kuca, str(datum_pr), str(izracunati_istek), "")
-                st.success(f"✅ Zapisnik za gromobrane spremljen (Istek: {izracunati_istek})!")
+                st.success(f"Zapisnik za gromobrane spremljen (Istek: {izracunati_istek})!")
                 st.rerun()
 
     elif sub_resurs == "Posude pod pritiskom":
         with st.form("forma_posude"):
-            st.markdown("#### 🛢️ Evidencija posuda pod pritiskom i ventila sigurnosti")
+            st.markdown("#### Evidencija posuda pod pritiskom i ventila sigurnosti")
             naziv_p = st.text_input("Naziv posude / opreme (npr. Kompresor, boca za zrak):")
             inv_br = st.text_input("Inventarni / Serijski broj:")
             pritisak = st.text_input("Radni pritisak (bar):")
@@ -227,18 +227,18 @@ def prikazi_registar_masina(username):
             mjeseci_roka = config.rokovi_mjeseci.get("Posude pod pritiskom i kompresori", 36)
             dani_roka = int(mjeseci_roka * 30.42)
             izracunati_istek = datum_pr + timedelta(days=dani_roka)
-            st.info(f"📅 Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
+            st.info(f"Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
             
             ovl_kuca = st.text_input("Ovlaštena organizacija:")
             
             if st.form_submit_button("Spremi posudu pod pritiskom"):
                 database.dodaj_posudu_pod_pritiskom(username, naziv_p, inv_br, pritisak, str(datum_pr), str(izracunati_istek), ovl_kuca)
-                st.success(f"✅ Posuda pod pritiskom spremljena (Istek: {izracunati_istek})!")
+                st.success(f"Posuda pod pritiskom spremljena (Istek: {izracunati_istek})!")
                 st.rerun()
 
     elif sub_resurs == "Mikroklima" or sub_resurs == "Mikroklima i štetnosti (buka, hemikalije...)":
         with st.form("forma_mikroklima"):
-            st.markdown("#### 🌡️ Ispitivanje mikroklime i štetnosti u radnoj sredini")
+            st.markdown("#### Ispitivanje mikroklime i štetnosti u radnoj sredini")
             naziv_mjesta = st.text_input("Radna zona / Mjesto mjerenja:")
             br_zapisnika = st.text_input("Broj stručnog nalaza / zapisnika:")
             datum_pr = st.date_input("Datum mjerenja:")
@@ -246,16 +246,16 @@ def prikazi_registar_masina(username):
             mjeseci_roka = config.rokovi_mjeseci.get("Radno okruženje (mikroklima, buka, osvjetljenje)", 36)
             dani_roka = int(mjeseci_roka * 30.42)
             izracunati_istek = datum_pr + timedelta(days=dani_roka)
-            st.info(f"📅 Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
+            st.info(f"Automatski izračunati datum isteka ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
             
             ovlastena_kuca = st.text_input("Ovlaštena laboratorija / kuća:")
             
             if st.form_submit_button("Spremi nalaz mikroklime i štetnosti"):
                 database.dodaj_masinu(username, naziv_mjesta, "Radno okruženje (mikroklima, buka, osvjetljenje)", "N/A", br_zapisnika, ovlastena_kuca, str(datum_pr), str(izracunati_istek), "")
-                st.success(f"✅ Nalaz mikroklime i štetnosti spremljen (Istek: {izracunati_istek})!")
+                st.success(f"Nalaz mikroklime i štetnosti spremljen (Istek: {izracunati_istek})!")
                 st.rerun()
 
-    st.markdown("#### 📋 Pregled unesenih resursa i instalacija:")
+    st.markdown("#### Pregled unesenih resursa i instalacija:")
     mas_rows = database.ucitaj_masine(username)
     if mas_rows:
         data_mas = [["Naziv", "Kategorija", "Zapisnik", "Pregled", "Istek", "Kuća"]] + [[m[1], m[2], m[4], m[6], m[7], m[5]] for m in mas_rows]
@@ -264,7 +264,7 @@ def prikazi_registar_masina(username):
         st.info("Nema unesenih resursa ili instalacija.")
 
 def prikazi_opasne_materije_tab(username):
-    st.markdown("### 🧪 Evidencija opasnih materija i hemikalija (Član 61. tačka c)")
+    st.markdown("### Evidencija opasnih materija i hemikalija (Član 61. tačka c)")
     with st.form("forma_materije"):
         naziv = st.text_input("Naziv materije / hemikalije:")
         kolicina = st.text_input("Količina / Skladišni prostor:")
@@ -272,10 +272,10 @@ def prikazi_opasne_materije_tab(username):
         sds = st.selectbox("Posjeduje SDS (Sigurnosno-tehnički list):", ["Da", "Ne"])
         if st.form_submit_button("Spremi materiju"):
             database.dodaj_opasnu_materiju(username, naziv, kolicina, namjena, sds)
-            st.success("✅ Opasna materija uspješno unesena!")
+            st.success("Opasna materija uspješno unesena!")
             st.rerun()
 
-    st.markdown("#### 📋 Pregled opasnih materija:")
+    st.markdown("#### Pregled opasnih materija:")
     mat_rows = database.ucitaj_opasne_materije(username)
     if mat_rows:
         data_mat = [["Materija", "Količina", "Namjena", "SDS"]] + [[m[1], m[2], m[3], m[4]] for m in mat_rows]
@@ -284,7 +284,7 @@ def prikazi_opasne_materije_tab(username):
         st.info("Nema opasnih materija.")
 
 def prikazi_povrede_tab(username):
-    st.markdown("### 🚑 Evidencija o povredama na radu (Član 61. tačka f)")
+    st.markdown("### Evidencija o povredama na radu (Član 61. tačka f)")
     with st.form("forma_povrede"):
         ime = st.text_input("Ime i prezime radnika:")
         rm = st.text_input("Radno mjesto radnika:")
@@ -295,10 +295,10 @@ def prikazi_povrede_tab(username):
         
         if st.form_submit_button("Spremi evidenciju povrede"):
             database.dodaj_povredu_na_radu(username, ime, rm, str(datum_p), vrsta, uzrok, prijava)
-            st.success("✅ Evidencija o povredi na radu uspješno unijeta!")
+            st.success("Evidencija o povredi na radu uspješno unijeta!")
             st.rerun()
 
-    st.markdown("#### 📋 Pregled povreda na radu:")
+    st.markdown("#### Pregled povreda na radu:")
     pov_rows = database.ucitaj_povrede_na_radu(username)
     if pov_rows:
         data_pov = [["Radnik", "Radno mjesto", "Datum", "Vrsta", "Prijava"]] + [[p[1], p[2], p[3], p[4], p[6]] for p in pov_rows]
@@ -307,7 +307,7 @@ def prikazi_povrede_tab(username):
         st.info("Nema povreda na radu, profesionalnih oboljenja niti smrtnih slučajeva.")
 
 def prikazi_zop_tab(username):
-    st.markdown("### 🧯 Zaštita od požara (ZOP)")
+    st.markdown("### Zaštita od požara (ZOP)")
     
     sub_zop = st.radio("Izaberite ZOP element / opremu:", [
         "Aparati za početno gašenje požara (PP aparati)", 
@@ -318,7 +318,7 @@ def prikazi_zop_tab(username):
 
     if sub_zop == "Aparati za početno gašenje požara (PP aparati)":
         with st.form("forma_pp_aparati_detaljna"):
-            st.markdown("#### 🧯 Unos PP aparata (Identifikacija i dvostruki rokovi)")
+            st.markdown("#### Unos PP aparata (Identifikacija i dvostruki rokovi)")
             
             col1, col2 = st.columns(2)
             with col1:
@@ -329,17 +329,17 @@ def prikazi_zop_tab(username):
             lokacija = st.text_input("Lokacija u objektu (npr. Hodnik I sprat / Pogon):")
             
             st.markdown("---")
-            st.markdown("##### 📅 1. Šestomjesečni pregled (Redovni servis)")
+            st.markdown("##### 1. Šestomjesečni pregled (Redovni servis)")
             datum_servisa_6m = st.date_input("Datum zadnjeg šestomjesečnog pregleda:")
             dani_6m = int(6 * 30.42)
             istek_servisa_6m = datum_servisa_6m + timedelta(days=dani_6m)
-            st.info(f"↳ Istek šestomjesečnog servisa: **{istek_servisa_6m}**")
+            st.info(f"Istek šestomjesečnog servisa: **{istek_servisa_6m}**")
             
-            st.markdown("##### 📅 2. Petogodišnji pregled (Ispitivanje posude pod pritiskom - atest)")
+            st.markdown("##### 2. Petogodišnji pregled (Ispitivanje posude pod pritiskom - atest)")
             datum_ispitivanja_5g = st.date_input("Datum zadnjeg petogodišnjeg pregleda (atesta):")
             dani_5g = int(60 * 30.42)
             istek_ispitivanja_5g = datum_ispitivanja_5g + timedelta(days=dani_5g)
-            st.info(f"↳ Istek petogodišnjeg atesta posude: **{istek_ispitivanja_5g}**")
+            st.info(f"Istek petogodišnjeg atesta posude: **{istek_ispitivanja_5g}**")
             
             st.markdown("---")
             serviser_kuca = st.text_input("Ovlaštena servisna kuća / Serviser:")
@@ -347,7 +347,7 @@ def prikazi_zop_tab(username):
             
             if st.form_submit_button("Spremi PP aparat"):
                 if not inventarni_broj.strip():
-                    st.warning("⚠️ Molimo unesite identifikacioni/inventarni broj aparata!")
+                    st.warning("Molimo unesite identifikacioni/inventarni broj aparata!")
                 else:
                     database.dodaj_pp_aparat(
                         username, tip_aparata, inventarni_broj, lokacija,
@@ -355,10 +355,10 @@ def prikazi_zop_tab(username):
                         str(datum_ispitivanja_5g), str(istek_ispitivanja_5g),
                         serviser_kuca, broj_zapisnika, ""
                     )
-                    st.success(f"✅ PP aparat ({tip_aparata} - {inventarni_broj}) uspješno spremljen!")
+                    st.success(f"PP aparat ({tip_aparata} - {inventarni_broj}) uspješno spremljen!")
                     st.rerun()
 
-        st.markdown("#### 📋 Pregled unesenih PP aparata:")
+        st.markdown("#### Pregled unesenih PP aparata:")
         pp_rows = database.ucitaj_pp_aparate(username)
         if pp_rows:
             data_pp = [["Tip", "Inv. br.", "Lokacija", "Servis (6m)", "Istek 6m", "Atest (5g)", "Istek 5g", "Serviser"]] + \
@@ -369,7 +369,7 @@ def prikazi_zop_tab(username):
 
     else:
         with st.form("forma_zop_detaljna"):
-            st.markdown("#### 🧯 Ostali ZOP sistemi i instalacije")
+            st.markdown("#### Ostali ZOP sistemi i instalacije")
             tip = st.selectbox("Element ZOP:", [
                 "Unutrašnja i vanjska hidrantska mreža", 
                 "Vatrodojava", 
@@ -384,17 +384,17 @@ def prikazi_zop_tab(username):
             dani_roka = int(mjeseci_roka * 30.42)
             izracunati_istek = datum_pregleda + timedelta(days=dani_roka)
             
-            st.info(f"📅 Automatski izračunati datum isteka važenja ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
+            st.info(f"Automatski izračunati datum isteka važenja ({mjeseci_roka} mjeseci): **{izracunati_istek}**")
             
             br_zapisnika = st.text_input("Broj zapisnika / izvještaja:")
             ovlastena_kuca = st.text_input("Ovlaštena organizacija / Serviser:")
             
             if st.form_submit_button("Spremi ZOP element"):
                 database.dodaj_masinu(username, tip, "ZOP", "N/A", br_zapisnika, ovlastena_kuca, str(datum_pregleda), str(izracunati_istek), "")
-                st.success(f"✅ Podaci za {tip} uspješno spremljeni! (Istek: {izracunati_istek})")
+                st.success(f"Podaci za {tip} uspješno spremljeni! (Istek: {izracunati_istek})")
                 st.rerun()
 
-        st.markdown("#### 📋 Pregled unesenih ostalih ZOP elemenata:")
+        st.markdown("#### Pregled unesenih ostalih ZOP elemenata:")
         sve_masine = database.ucitaj_masine(username)
         zop_rows = [m for m in sve_masine if m[2] == "ZOP"]
         if zop_rows:
@@ -405,9 +405,9 @@ def prikazi_zop_tab(username):
 
 # --- 3. GLAVNA ADMINISTRACIJA ---
 def prikazi_administraciju(formData, current_user):
-    st.markdown("### ⚙️ Administracija sistema")
+    st.markdown("### Administracija sistema")
     
-    sekcija = st.selectbox("📂 Izaberite sekciju:", [
+    sekcija = st.selectbox("Izaberite sekciju:", [
         "1. Osnovne obaveze (Katalog)",
         "2. Kadrovi i obuke",
         "3. ZOP (Zaštita od požara)",
@@ -417,7 +417,7 @@ def prikazi_administraciju(formData, current_user):
     st.markdown("---")
 
     if "1. Osnovne" in sekcija:
-        st.markdown("#### 📋 Katalog zakonskih obaveza (Samo odabir obaveza)")
+        st.markdown("#### Katalog zakonskih obaveza (Samo odabir obaveza)")
         st.caption("Označite stavke koje važe za Vašu kompaniju. Datumi i rokovi se automatski povlače iz unosa u administraciji.")
         
         lokacije_dict = formData.get("lokacije", {})
@@ -434,10 +434,10 @@ def prikazi_administraciju(formData, current_user):
                         st.markdown(f"<span style='color: #0284c7; font-size: 0.85em;'>↳ Periodična obaveza (zakonski rok: {info['mjeseci']} mjeseci)</span>", unsafe_allow_html=True)
                 st.markdown("---")
 
-            if st.form_submit_button("💾 Spremi izmjene kataloga"):
+            if st.form_submit_button("Spremi izmjene kataloga"):
                 formData["lokacije"]["Sve lokacije (Sumarni pregled)"] = nove_aktivne
                 database.snimi_podatke_firme(current_user, formData)
-                st.success("✅ Katalog uspješno ažuriran!")
+                st.success("Katalog uspješno ažuriran!")
                 st.rerun()
 
     elif "2. Kadrovi" in sekcija:
@@ -628,7 +628,7 @@ def generisi_clan61_pdf(username, formData):
 
 # --- 4. DASHBOARD ---
 def prikazi_znr_formu(formData, current_user):
-    st.markdown("### 📊 Dashboard i Status usklađenosti poslovanja")
+    st.markdown("### Dashboard i Status usklađenosti poslovanja")
     st.markdown("---")
     
     col1, col2, col3 = st.columns(3)
@@ -642,13 +642,13 @@ def prikazi_znr_formu(formData, current_user):
     st.markdown("---")
     
     # Sekcija za preuzimanje PDF izvještaja
-    st.markdown("#### 📥 Generisanje zvaničnih PDF izvještaja")
+    st.markdown("#### Generisanje zvaničnih PDF izvještaja")
     if REPORTLAB_AVAILABLE:
         col_pdf1, col_pdf2 = st.columns(2)
         with col_pdf1:
             pdf_gen_data = generisi_generalni_pdf(formData, current_user)
             st.download_button(
-                label="📄 Preuzmi Generalni izvještaj (PDF)",
+                label="Preuzmi Generalni izvještaj (PDF)",
                 data=pdf_gen_data,
                 file_name=f"generalni_izvjestaj_{current_user}.pdf",
                 mime="application/pdf"
@@ -656,16 +656,16 @@ def prikazi_znr_formu(formData, current_user):
         with col_pdf2:
             pdf_c61_data = generisi_clan61_pdf(current_user, formData)
             st.download_button(
-                label="📋 Preuzmi Izvještaj po Članu 61 (PDF)",
+                label="Preuzmi Izvještaj po Članu 61 (PDF)",
                 data=pdf_c61_data,
                 file_name=f"izvjestaj_clan_61_{current_user}.pdf",
                 mime="application/pdf"
             )
     else:
-        st.warning("⚠️ Biblioteka `reportlab` se trenutno učitava na serveru. Molimo osvježite stranicu za par sekundi.")
+        st.warning("Upozorenje: Biblioteka `reportlab` se trenutno učitava na serveru. Molimo osvježite stranicu za par sekundi.")
 
     st.markdown("---")
-    st.markdown("#### 📋 Pregled zakonskih obaveza i dvostrukih rokova (PP aparati, mašine i kadrovi):")
+    st.markdown("#### Pregled zakonskih obaveza i dvostrukih rokova (PP aparati, mašine i kadrovi):")
     
     lokacije_dict = formData.get("lokacije", {})
     aktivne_obaveze = lokacije_dict.get("Sve lokacije (Sumarni pregled)", [])
@@ -724,7 +724,7 @@ def prikazi_znr_formu(formData, current_user):
 
     # === POSEBAN PRIKAZ DVOSTRUKIH SEMAFORA ZA PP APARATE ===
     if sve_pp_aparati:
-        st.markdown("##### 🧯 Status PP aparata (Dvostruki tajmeri):")
+        st.markdown("##### Status PP aparata (Dvostruki tajmeri):")
         for pp in sve_pp_aparati:
             pp_id, tip_, inv_, lok_, d6m, i6m, d5g, i5g, serv_, zaps_ = pp[0], pp[1], pp[2], pp[3], pp[4], pp[5], pp[6], pp[7], pp[8], pp[9]
             
@@ -752,7 +752,7 @@ def prikazi_znr_formu(formData, current_user):
             except Exception:
                 sem_5g = "🟢 **USKLAĐENO (5g)**"
 
-            st.markdown(f"🧯 **{tip_}** (Inv. br: *{inv_}* — Lokacija: *{lok_}*)")
+            st.markdown(f"**{tip_}** (Inv. br: *{inv_}* — Lokacija: *{lok_}*)")
             st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;• {sem_6m} — Redovni servis (6m) važi do: **{i6m}** (Zapisnik: {zaps_})")
             st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;• {sem_5g} — Ispitivanje posude (5g) važi do: **{i5g}** (Serviser: {serv_})")
         st.markdown("---")
