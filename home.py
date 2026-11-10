@@ -49,7 +49,6 @@ def main():
         col_centar1, col_centar2, col_centar3 = st.columns([1, 1.5, 1])
         
         with col_centar2:
-            # Zaglavlje: smanjen razmak i povećan logo (širine [0.6, 3.4], logo 145px)
             head_c1, head_c2 = st.columns([0.6, 3.4], vertical_alignment="center")
             with head_c1:
                 try:
@@ -67,14 +66,13 @@ def main():
                 st.markdown("### 🏢 Registruj novu firmu u sistemu")
                 st.caption("Unesite podatke i definišite pristupne podatke.")
 
-                # Ovdje uvodimo FORMU koja čuva podatke dok se ne pritisne submit dugme
                 with st.form("forma_registracija"):
-                    reg_username = st.text_input("Korisničko ime (za prijavu):")
-                    reg_password = st.text_input("Šifra:", type="password")
-                    naziv_firme = st.text_input("Naziv kompanije:")
-                    djelatnost = st.selectbox("Osnovna djelatnost:", config.industrije_lista)
-                    broj_radnika = st.number_input("Ukupan broj zaposlenih radnika:", min_value=1, value=20)
-                    unos_lokacija = st.text_input("Lokacije / Pogon(i) (odvojeno zarezom):", value="Centrala - Sarajevo")
+                    reg_username = st.text_input("Korisničko ime (za prijavu):", key="reg_input_user")
+                    reg_password = st.text_input("Šifra:", type="password", key="reg_input_pass")
+                    naziv_firme = st.text_input("Naziv kompanije:", key="reg_input_naziv")
+                    djelatnost = st.selectbox("Osnovna djelatnost:", config.industrije_lista, key="reg_input_djelatnost")
+                    broj_radnika = st.number_input("Ukupan broj zaposlenih radnika:", min_value=1, value=20, key="reg_input_radnici")
+                    unos_lokacija = st.text_input("Lokacije / Pogon(i) (odvojeno zarezom):", value="Centrala - Sarajevo", key="reg_input_lokacije")
                     
                     st.markdown("---")
                     st.markdown("<b>Izaberite obaveze koje vaša firma posjeduje (datume i detalje unosite kasnije):</b>", unsafe_allow_html=True)
@@ -111,7 +109,6 @@ def main():
                         for lok in sirove_lokacije:
                             lokacije_mapa[lok] = odabrane_obaveze
 
-                        # Upis u bazu
                         uspjeh = database.registruj_novu_firmu(
                             clean_user,
                             clean_pass,
@@ -132,20 +129,18 @@ def main():
                         else:
                             st.error("⚠️ Korisničko ime već postoji u bazi. Izaberite drugo.")
 
-                # Dugme za povratak stoji van forme kako ne bi pokretalo validaciju
                 st.markdown("<br>", unsafe_allow_html=True)
                 col_reg_nazad, _ = st.columns([1, 1])
                 with col_reg_nazad:
-                    if st.button("⬅️ Nazad na prijavu", use_container_width=True):
+                    if st.button("⬅️ Nazad na prijavu", use_container_width=True, key="btn_nazad_login"):
                         st.session_state['registracija_mod'] = False
                         st.rerun()
 
             else:
                 with st.form("login_forma"):
-                    # Uklonjen emoji brave
                     st.markdown("### Prijava u sistem")
-                    input_korisnik = st.text_input("Korisničko ime:")
-                    input_sifra = st.text_input("Šifra:", type="password")
+                    input_korisnik = st.text_input("Korisničko ime:", key="login_input_user")
+                    input_sifra = st.text_input("Šifra:", type="password", key="login_input_pass")
                     submitted = st.form_submit_button("Prijavi se", use_container_width=True)
 
                     if submitted:
@@ -162,7 +157,7 @@ def main():
                             st.error("⚠️ Pogrešno korisničko ime ili šifra!")
 
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("🏢 Registruj novu firmu", use_container_width=True):
+                if st.button("🏢 Registruj novu firmu", use_container_width=True, key="btn_otvori_reg"):
                     st.session_state['registracija_mod'] = True
                     st.rerun()
 
@@ -170,13 +165,12 @@ def main():
         current_user = st.session_state['korisnik_username']
         formData = database.ucitaj_podatke_firme(current_user)
 
-        # Dodan CSS za maslinasto zelenu boju sidebara (Olive Drab #556b2f)
+        # CSS za maslinasto zelenu boju sidebara (Olive Drab #556b2f)
         st.markdown("""
             <style>
             [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
                 background-color: #556b2f !important;
             }
-            /* Prilagođavanje boje teksta u sidebaru da bude pregledno na tamnijoj podlozi */
             [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label, [data-testid="stSidebar"] h3 {
                 color: #ffffff !important;
             }
@@ -187,14 +181,13 @@ def main():
             st.markdown(f"### 👤 Prijavljeni ste kao:")
             st.info(f"**{formData.get('naziv', current_user)}**")
             st.markdown("---")
-            # Dodana opcija "Kalendar rokova" u meni
             izbor_modula = st.radio("Izaberite modul:", [
                 "Dashboard i Obaveze (ZNR & ZOP)", 
                 "Kalendar rokova", 
                 "Administracija sistema"
-            ])
+            ], key="nav_izbor_modula")
             st.markdown("---")
-            if st.button("🚪 Odjava iz sistema", use_container_width=True):
+            if st.button("🚪 Odjava iz sistema", use_container_width=True, key="btn_odjava"):
                 st.session_state['ulogovan'] = False
                 st.session_state['korisnik_username'] = ""
                 st.session_state['prikazi_izvjestaj'] = False
@@ -206,9 +199,6 @@ def main():
             kalendar_module.prikazi_kalendar(current_user)
         else:
             znr_module.prikazi_administraciju(formData, current_user)
-
-if __name__ == "__main__":
-    main()
 
 if __name__ == "__main__":
     main()
